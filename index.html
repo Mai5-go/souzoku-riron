@@ -169,6 +169,41 @@ body[data-sheet="1"] .kw.on{background:transparent;color:var(--kw)}
 .g-bar{height:5px;background:var(--raise2)}
 .g-bar span{display:block;height:100%;background:var(--gold);transition:width .4s}
 .link{background:none;border:0;color:var(--muted);font-size:12px;font-family:var(--gothic);cursor:pointer;text-decoration:underline;text-underline-offset:4px;padding:4px}
+/* 復習スケジュール */
+.today-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.today-hd b{font-family:var(--mono);font-size:30px;color:var(--gold-soft);font-weight:600;line-height:1}
+.today-hd span{font-family:var(--mincho);font-size:14px}
+.due{border:1px solid var(--line);border-left:3px solid var(--gold);padding:12px 13px;margin-bottom:9px;border-radius:2px;background:var(--raise)}
+.due[data-late="1"]{border-left-color:var(--suou)}
+.due[data-done="1"]{border-left-color:var(--jade);opacity:.55}
+.due-top{display:flex;align-items:baseline;gap:9px;margin-bottom:3px}
+.due-top .no{font-family:var(--mono);font-size:13px;color:var(--gold);font-weight:600}
+.due-top .tag{font-size:10.5px;color:var(--suou);border:1px solid var(--suou);padding:0 5px;border-radius:2px}
+.due-top .tag.new{color:var(--gold-soft);border-color:var(--gold)}
+.due-top .st{margin-left:auto;font-size:11px;color:var(--gold)}
+.due .tt{font-family:var(--mincho);font-size:14.5px;line-height:1.6;display:block;margin-bottom:9px}
+.due .acts{display:flex;gap:6px}
+.due .acts button{flex:1;background:transparent;border:1px solid var(--line);color:var(--muted);
+  font-size:11.5px;padding:8px 2px;border-radius:2px;cursor:pointer;font-family:var(--gothic);line-height:1.35}
+.due .acts button.open{flex:0 0 68px;border-color:var(--gold);color:var(--gold-soft)}
+.due .acts button em{display:block;font-style:normal;font-size:9.5px;opacity:.7;font-family:var(--mono)}
+.due .acts button.g0{border-color:rgba(201,100,122,.5)}
+.due .acts button.g2{border-color:rgba(95,174,140,.5)}
+.fc{display:flex;align-items:flex-end;gap:3px;height:56px;margin:6px 0 4px}
+.fc div{flex:1;background:var(--raise2);position:relative;border-radius:1px 1px 0 0}
+.fc div span{position:absolute;bottom:0;left:0;right:0;background:var(--gold);border-radius:1px 1px 0 0}
+.fc div[data-t="1"] span{background:var(--gold-soft)}
+.fcx{display:flex;gap:3px;font-family:var(--mono);font-size:8.5px;color:var(--muted)}
+.fcx span{flex:1;text-align:center}
+.rate{border-top:1px solid var(--line);margin-top:26px;padding-top:16px}
+.rate h4{font-family:var(--mincho);font-size:14px;margin:0 0 3px;letter-spacing:.06em}
+.rate p{margin:0 0 11px;font-size:11.5px;color:var(--muted)}
+.rate .acts{display:flex;gap:7px}
+.rate .acts button{flex:1;background:transparent;border:1px solid var(--line);color:var(--paper);
+  padding:11px 4px;font-size:12.5px;border-radius:2px;cursor:pointer;font-family:var(--gothic);line-height:1.4}
+.rate .acts button em{display:block;font-style:normal;font-size:10px;color:var(--muted);font-family:var(--mono)}
+.rate .acts .g0{border-color:rgba(201,100,122,.55)}
+.rate .acts .g2{border-color:rgba(95,174,140,.55)}
 .empty{color:var(--muted);font-size:13px;text-align:center;padding:32px 10px;line-height:1.9}
 footer{margin:36px 0 8px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.9;text-align:center}
 footer .seal{font-family:var(--mincho);letter-spacing:.3em;color:var(--gold);font-size:12px;margin-bottom:6px}
@@ -184,17 +219,22 @@ footer .seal{font-family:var(--mincho);letter-spacing:.3em;color:var(--gold);fon
   <p class="lede">柱で暗唱 → てにをはで骨格確認 → タップで本文照合</p>
 </header>
 <nav><div class="tabs" role="tablist">
-  <button class="tab" role="tab" aria-selected="true" data-view="riron">理論本文</button>
+  <button class="tab" role="tab" aria-selected="true" data-view="today">今日の復習</button>
+  <button class="tab" role="tab" aria-selected="false" data-view="riron">理論本文</button>
   <button class="tab" role="tab" aria-selected="false" data-view="tw">てにをは</button>
   <button class="tab" role="tab" aria-selected="false" data-view="list">理論一覧</button>
   <button class="tab" role="tab" aria-selected="false" data-view="quiz">判定クイズ</button>
   <button class="tab" role="tab" aria-selected="false" data-view="stats">学習記録</button>
 </div></nav>
 <main>
-  <section class="panel" id="v-riron">
+  <section class="panel" id="v-today">
+    <div id="todayBox"></div>
+  </section>
+  <section class="panel" id="v-riron" hidden>
     <div class="picker" id="chapChips"></div>
     <div class="picker" id="picker"></div>
     <div id="rironBox"></div>
+    <div class="rate" id="rateBox"></div>
     <div class="pager"><button id="pPrev">← 前の問題</button><button id="pNext">次の問題 →</button></div>
   </section>
   <section class="panel" id="v-tw" hidden>
@@ -352,6 +392,95 @@ function skel(t){
   return runs.map(esc).join('<span class="sep">/</span>');
 }
 
+
+/* ===== 復習スケジュール(忘却曲線・2週間で1周) ===== */
+const DAY=86400000, LADDER=[1,2,4,7,11,14];
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const ds=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pd=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
+const dayDiff=(a,b)=>Math.round((pd(a)-b)/DAY);
+function initSched(){
+  if(!P.sched)P.sched={};
+  const t=today(),n=RIRON.length;
+  RIRON.forEach((r,i)=>{
+    if(P.sched[r.no])return;
+    P.sched[r.no]={due:ds(new Date(t.getTime()+Math.floor(i*14/n)*DAY)),step:-1,seen:0};
+  });
+}
+function grade(no,g){
+  const s=P.sched[no]||{step:-1,seen:0};
+  const base=(s.step==null||s.step<0)?-1:s.step;
+  let step = g===0 ? 0 : Math.min(base+(g===2?2:1),LADDER.length-1);
+  if(step<0)step=0;
+  P.sched[no]={due:ds(new Date(today().getTime()+LADDER[step]*DAY)),step:step,seen:(s.seen||0)+1,last:ds(today())};
+  save();
+}
+function dueList(){
+  const t=today();
+  return RIRON.map((r,i)=>({r:r,i:i,s:P.sched[r.no]}))
+    .filter(x=>x.s&&dayDiff(x.s.due,t)<=0)
+    .sort((a,b)=>dayDiff(a.s.due,t)-dayDiff(b.s.due,t)||a.i-b.i);
+}
+function nextIv(no,g){
+  const s=P.sched[no]||{step:-1};
+  const base=(s.step==null||s.step<0)?-1:s.step;
+  return LADDER[g===0?0:Math.min(base+(g===2?2:1),LADDER.length-1)];
+}
+function renderToday(){
+  const t=today(),list=dueList(),box=$("#todayBox");
+  const late=list.filter(x=>dayDiff(x.s.due,t)<0).length;
+  const donetoday=RIRON.filter(r=>P.sched[r.no]&&P.sched[r.no].last===ds(t)).length;
+  let h='<div class="today-hd"><b>'+list.length+'</b><span>問が今日の対象'+(late?'（うち繰越 '+late+'）':'')+'</span></div>';
+  h+='<p class="sect-note">全'+RIRON.length+'問を約2週間で1周します。1問終えたら手ごたえを押すと、次回の日程が自動で決まります。今日すでに '+donetoday+' 問を記録しました。</p>';
+  const fc=[];
+  for(let d=0;d<14;d++){
+    const dd=new Date(t.getTime()+d*DAY);
+    fc.push(RIRON.filter(r=>P.sched[r.no]&&P.sched[r.no].due===ds(dd)).length);
+  }
+  const mx=Math.max(1,...fc);
+  h+='<div class="fc">'+fc.map((v,d)=>'<div'+(d===0?' data-t="1"':'')+' title="'+v+'問"><span style="height:'+(v/mx*100)+'%"></span></div>').join('')+'</div>';
+  h+='<div class="fcx">'+fc.map((v,d)=>'<span>'+(d===0?'今日':(d%2===0?v:''))+'</span>').join('')+'</div>';
+  h+='<p class="sect-note" style="margin-top:6px">これから14日間の予定件数</p>';
+  if(!list.length){
+    h+='<p class="empty">今日の分は終わりました。<br>先に進めたいときは、下の予定から前倒しで開けます。</p>';
+  }
+  list.forEach(x=>{
+    const over=dayDiff(x.s.due,t);
+    const done=x.s.last===ds(t);
+    h+='<div class="due" data-late="'+(over<0?1:0)+'" data-done="'+(done?1:0)+'">';
+    h+='<div class="due-top"><span class="no">'+esc(x.r.no)+'</span>';
+    if(over<0)h+='<span class="tag">'+(-over)+'日遅れ</span>';
+    else if(!x.s.seen)h+='<span class="tag new">初回</span>';
+    h+='<span class="st">'+esc(x.r.chap)+'</span></div>';
+    h+='<span class="tt">'+esc(x.r.ttl)+'</span>';
+    h+='<div class="acts"><button class="open" data-go="'+x.i+'">開く</button>'+
+       '<button class="g0" data-g="0" data-no="'+x.r.no+'">あやふや<em>'+nextIv(x.r.no,0)+'日後</em></button>'+
+       '<button class="g1" data-g="1" data-no="'+x.r.no+'">まあまあ<em>'+nextIv(x.r.no,1)+'日後</em></button>'+
+       '<button class="g2" data-g="2" data-no="'+x.r.no+'">完璧<em>'+nextIv(x.r.no,2)+'日後</em></button></div>';
+    h+='</div>';
+  });
+  box.innerHTML=h;
+  box.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{
+    cur=+b.dataset.go;chap=null;OPEN={};TOPEN={};render();show("riron")});
+  box.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{
+    grade(b.dataset.no,+b.dataset.g);renderToday();renderRate()});
+}
+function renderRate(){
+  const r=RIRON[cur],s=P.sched[r.no]||{},box=$("#rateBox");
+  const t=today();
+  let nx='';
+  if(s.due){const d=dayDiff(s.due,t);nx=d<0?('予定日を'+(-d)+'日過ぎています'):d===0?'今日が予定日です':('次回は'+d+'日後（'+s.due+'）');}
+  let h='<h4>'+esc(r.no)+' の手ごたえを記録</h4><p>'+esc(nx)+(s.seen?('　/　'+s.seen+'回目'):'　/　未記録')+'</p>';
+  h+='<div class="acts">'+
+     '<button class="g0" data-g="0">あやふや<em>'+nextIv(r.no,0)+'日後</em></button>'+
+     '<button class="g1" data-g="1">まあまあ<em>'+nextIv(r.no,1)+'日後</em></button>'+
+     '<button class="g2" data-g="2">完璧<em>'+nextIv(r.no,2)+'日後</em></button></div>';
+  box.innerHTML=h;
+  box.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{
+    grade(r.no,+b.dataset.g);renderRate();renderToday();buildChips();
+    box.scrollIntoView({block:"center"});});
+}
+
 let cur=0, chap=null, OPEN={}, TOPEN={};
 function inChap(){return RIRON.map((r,i)=>[r,i]).filter(([r])=>!chap||r.chap===chap)}
 function buildChips(){
@@ -464,7 +593,7 @@ function renderTW(){
     const id=el.dataset.id;TOPEN[id]=!TOPEN[id];renderTW()});
   $("#twBox").querySelectorAll(".kw").forEach(k=>k.onclick=e=>{e.stopPropagation();k.classList.toggle("on")});
 }
-function render(){buildChips();renderRiron();renderTW()}
+function render(){buildChips();renderRiron();renderTW();renderRate()}
 const step=d=>{const l=inChap();let k=l.findIndex(([r,i])=>i===cur);k=(k+d+l.length)%l.length;
   cur=l[k][1];OPEN={};TOPEN={};render();window.scrollTo({top:0})};
 $("#pPrev").onclick=()=>step(-1);$("#pNext").onclick=()=>step(1);
@@ -474,6 +603,7 @@ $$(".tab").forEach(t=>t.onclick=()=>show(t.dataset.view));
 function show(v){
   $$(".tab").forEach(t=>t.setAttribute("aria-selected",String(t.dataset.view===v)));
   $$(".panel").forEach(p=>p.hidden=(p.id!=="v-"+v));
+  if(v==="today")renderToday();
   if(v==="list")renderList();
   if(v==="stats")renderStats();
   window.scrollTo({top:0});
@@ -553,11 +683,11 @@ function renderStats(){
   });
 }
 $("#btnReset").onclick=()=>{if(!confirm("学習記録をすべて消します。よろしいですか。"))return;
-  P={ok:{},quiz:{}};save();render();renderStats()};
+  P={ok:{},quiz:{},sched:{}};initSched();save();render();renderToday();renderStats()};
 (async()=>{
   const raw=await store.get(KEY);
-  if(raw){try{const o=JSON.parse(raw);P={ok:o.ok||{},quiz:o.quiz||{}}}catch(e){}}
-  render();renderCase();
+  if(raw){try{const o=JSON.parse(raw);P={ok:o.ok||{},quiz:o.quiz||{},sched:o.sched||{}}}catch(e){}}
+  initSched();save();render();renderToday();renderCase();
 })();
 </script>
 </body>
