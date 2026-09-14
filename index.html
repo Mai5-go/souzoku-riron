@@ -176,6 +176,9 @@ body[data-sheet="1"] .kw.on{background:transparent;color:var(--kw)}
 .due{border:1px solid var(--line);border-left:3px solid var(--gold);padding:12px 13px;margin-bottom:9px;border-radius:2px;background:var(--raise)}
 .due[data-late="1"]{border-left-color:var(--suou)}
 .due[data-done="1"]{border-left-color:var(--jade);opacity:.55}
+.due[data-ahead="1"]{border-left-color:var(--muted);background:transparent}
+.due-top .tag.ahead{color:var(--muted);border-color:var(--line)}
+.subhd{font-family:var(--mincho);font-size:13.5px;letter-spacing:.08em;color:var(--gold-soft);margin:26px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
 .due-top{display:flex;align-items:baseline;gap:9px;margin-bottom:3px}
 .due-top .no{font-family:var(--mono);font-size:13px;color:var(--gold);font-weight:600}
 .due-top .tag{font-size:10.5px;color:var(--suou);border:1px solid var(--suou);padding:0 5px;border-radius:2px}
@@ -189,9 +192,9 @@ body[data-sheet="1"] .kw.on{background:transparent;color:var(--kw)}
 .due .acts button em{display:block;font-style:normal;font-size:9.5px;opacity:.7;font-family:var(--mono)}
 .due .acts button.g0{border-color:rgba(201,100,122,.5)}
 .due .acts button.g2{border-color:rgba(95,174,140,.5)}
-.fc{display:flex;align-items:flex-end;gap:3px;height:56px;margin:6px 0 4px}
-.fc div{flex:1;background:var(--raise2);position:relative;border-radius:1px 1px 0 0}
-.fc div span{position:absolute;bottom:0;left:0;right:0;background:var(--gold);border-radius:1px 1px 0 0}
+.fc{display:flex;align-items:stretch;gap:3px;height:56px;margin:6px 0 4px}
+.fc div{flex:1;background:var(--raise2);position:relative;border-radius:1px;min-width:0}
+.fc div span{position:absolute;bottom:0;left:0;right:0;background:var(--gold);border-radius:1px;min-height:2px}
 .fc div[data-t="1"] span{background:var(--gold-soft)}
 .fcx{display:flex;gap:3px;font-family:var(--mono);font-size:8.5px;color:var(--muted)}
 .fcx span{flex:1;text-align:center}
@@ -340,11 +343,18 @@ const QUIZ=[
 QUIZ.forEach((q,i)=>q.id="q"+(i+1));
 const KEY="souzoku-riron:v3";const mem={};
 const store={
- async get(k){try{if(window.storage){const r=await window.storage.get(k);return r?r.value:null}}catch(e){}return k in mem?mem[k]:null},
- async set(k,v){mem[k]=v;try{if(window.storage)await window.storage.set(k,v)}catch(e){}}
+ async get(k){
+   try{const v=window.localStorage.getItem(k);if(v!=null)return v}catch(e){}
+   try{if(window.storage){const r=await window.storage.get(k);return r?r.value:null}}catch(e){}
+   return k in mem?mem[k]:null},
+ set(k,v){mem[k]=v;
+   try{window.localStorage.setItem(k,v)}catch(e){}
+   try{if(window.storage)window.storage.set(k,v)}catch(e){}}
 };
-let P={ok:{},quiz:{}},saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>store.set(KEY,JSON.stringify(P)),300)}
+let P={ok:{},quiz:{},sched:{}};
+function save(){try{store.set(KEY,JSON.stringify(P))}catch(e){}}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")save()});
+window.addEventListener("pagehide",save);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
 const kwm=s=>esc(s).replace(/《(.+?)》/g,'<span class="kw">$1</span>');
@@ -426,6 +436,21 @@ function nextIv(no,g){
   const base=(s.step==null||s.step<0)?-1:s.step;
   return LADDER[g===0?0:Math.min(base+(g===2?2:1),LADDER.length-1)];
 }
+function dueCard(x,t,ahead){
+  const over=dayDiff(x.s.due,t), done=x.s.last===ds(t);
+  let h='<div class="due" data-late="'+(over<0?1:0)+'" data-done="'+(done?1:0)+'" data-ahead="'+(ahead?1:0)+'">';
+  h+='<div class="due-top"><span class="no">'+esc(x.r.no)+'</span>';
+  if(ahead){const d=pd(x.s.due);h+='<span class="tag ahead">'+(d.getMonth()+1)+'/'+d.getDate()+'予定</span>';}
+  else if(over<0)h+='<span class="tag">'+(-over)+'日遅れ</span>';
+  else if(!x.s.seen)h+='<span class="tag new">初回</span>';
+  h+='<span class="st">'+esc(x.r.chap)+'</span></div>';
+  h+='<span class="tt">'+esc(x.r.ttl)+'</span>';
+  h+='<div class="acts"><button class="open" data-go="'+x.i+'">開く</button>'+
+     '<button class="g0" data-g="0" data-no="'+x.r.no+'">あやふや<em>'+nextIv(x.r.no,0)+'日後</em></button>'+
+     '<button class="g1" data-g="1" data-no="'+x.r.no+'">まあまあ<em>'+nextIv(x.r.no,1)+'日後</em></button>'+
+     '<button class="g2" data-g="2" data-no="'+x.r.no+'">完璧<em>'+nextIv(x.r.no,2)+'日後</em></button></div>';
+  return h+'</div>';
+}
 function renderToday(){
   const t=today(),list=dueList(),box=$("#todayBox");
   const late=list.filter(x=>dayDiff(x.s.due,t)<0).length;
@@ -442,23 +467,16 @@ function renderToday(){
   h+='<div class="fcx">'+fc.map((v,d)=>'<span>'+(d===0?'今日':(d%2===0?v:''))+'</span>').join('')+'</div>';
   h+='<p class="sect-note" style="margin-top:6px">これから14日間の予定件数</p>';
   if(!list.length){
-    h+='<p class="empty">今日の分は終わりました。<br>先に進めたいときは、下の予定から前倒しで開けます。</p>';
+    h+='<p class="empty">今日の分は終わりました。おつかれさまでした。<br>先に進めたいときは、下の「この先の予定」から前倒しできます。</p>';
   }
-  list.forEach(x=>{
-    const over=dayDiff(x.s.due,t);
-    const done=x.s.last===ds(t);
-    h+='<div class="due" data-late="'+(over<0?1:0)+'" data-done="'+(done?1:0)+'">';
-    h+='<div class="due-top"><span class="no">'+esc(x.r.no)+'</span>';
-    if(over<0)h+='<span class="tag">'+(-over)+'日遅れ</span>';
-    else if(!x.s.seen)h+='<span class="tag new">初回</span>';
-    h+='<span class="st">'+esc(x.r.chap)+'</span></div>';
-    h+='<span class="tt">'+esc(x.r.ttl)+'</span>';
-    h+='<div class="acts"><button class="open" data-go="'+x.i+'">開く</button>'+
-       '<button class="g0" data-g="0" data-no="'+x.r.no+'">あやふや<em>'+nextIv(x.r.no,0)+'日後</em></button>'+
-       '<button class="g1" data-g="1" data-no="'+x.r.no+'">まあまあ<em>'+nextIv(x.r.no,1)+'日後</em></button>'+
-       '<button class="g2" data-g="2" data-no="'+x.r.no+'">完璧<em>'+nextIv(x.r.no,2)+'日後</em></button></div>';
-    h+='</div>';
-  });
+  list.forEach(function(x){h+=dueCard(x,t,false)});
+  const ahead=RIRON.map(function(r,i){return {r:r,i:i,s:P.sched[r.no]}})
+    .filter(function(x){return x.s&&dayDiff(x.s.due,t)>0})
+    .sort(function(a,b){return dayDiff(a.s.due,t)-dayDiff(b.s.due,t)||a.i-b.i}).slice(0,8);
+  if(ahead.length){
+    h+='<div class="subhd">この先の予定（前倒しできます）</div>';
+    ahead.forEach(function(x){h+=dueCard(x,t,true)});
+  }
   box.innerHTML=h;
   box.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{
     cur=+b.dataset.go;chap=null;OPEN={};TOPEN={};render();show("riron")});
